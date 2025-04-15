@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # 2. Configuración centralizada
 @dag(
     dag_id="snowflake_loader",
-    schedule=None,
+    schedule="*/15 * * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args={
@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 def load_snowflake():
     """Define a DAG to load data into Snowflake and export it to S3."""
     @task(task_id="execute_data_load",
-          on_success_callback=slack_success_callback,
-          on_failure_callback=slack_failure_callback
-          )
+            on_success_callback=slack_success_callback,
+            on_failure_callback=slack_failure_callback
+            )
     def run_data_load():
         """Run the Snowflake data load task."""
         os.environ["KAGGLE_CONFIG_DIR"] = str(Path(__file__).parent.parent / ".secrets")
@@ -40,9 +40,9 @@ def load_snowflake():
         )
 
     @task(task_id="export_data_to_s3",
-          on_success_callback=slack_success_callback,
-          on_failure_callback=slack_failure_callback
-          )
+            on_success_callback=slack_success_callback,
+            on_failure_callback=slack_failure_callback
+            )
     def export_to_s3_task():
         """Run the export task to upload data from Snowflake to S3."""
         return run_step(
