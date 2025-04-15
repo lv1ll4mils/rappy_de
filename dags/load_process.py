@@ -1,56 +1,55 @@
+# 1. Imports organizados
 from datetime import datetime, timedelta
-from airflow.decorators import dag, task
-from airflow.operators.python import PythonOperator
-import os, logging
 from pathlib import Path
+import logging, os
+from airflow.decorators import dag, task
+from utils.callbacks import slack_success_callback, slack_failure_callback
 
-
+# Configura logging
 logger = logging.getLogger(__name__)
 
-AIRFLOW_HOME = os.getenv("AIRFLOW_HOME", Path(__file__).parent.parent)
-SCRIPT_PATH = os.path.join(AIRFLOW_HOME, "scripts", "load_dataset_snowflake.py")
-
+# 2. Configuración centralizada
 @dag(
-    dag_id="snowflake_meetup_loader",
-    schedule=None,  # Cada 15 minutos
+    dag_id="snowflake_loader",
+    schedule=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    max_active_runs=1,
     default_args={
         "owner": "data_eng",
         "retries": 0,
-        "retry_delay": timedelta(minutes=5),  # 5 minutos
+        "retry_delay": timedelta(minutes=3),
     },
-    tags=["snowflake", "meetup"],
+    tags=["snowflake", "prod"],
 )
 
 def load_snowflake():
-    @task(task_id="execute_data_pipeline")
-    def run_snowflake_script():
-        """
-        Ejecuta el script de Python que carga datos a Snowflake.
-        """
-        import subprocess
 
-        if not os.path.exists(SCRIPT_PATH):
-            raise FileNotFoundError(f"Script no encontrado en {SCRIPT_PATH}")
-
+    @task(task_id="execute_data_load",
+          on_success_callback=slack_success_callback,
+          on_failure_callback=slack_failure_callback
+          )
+    def run_data_load():
+        """Versión con importación directa y manejo robusto"""
         try:
-            result = subprocess.run(
-                ["python", SCRIPT_PATH],
-                check=True,
-                text=True,
-                capture_output=True,
-                cwd=os.path.dirname(SCRIPT_PATH)  # Ejecuta desde la carpeta del script
-            )
-            logger.info(f"✅ Script ejecutado exitosamente\nOutput: {result.stdout}")
-            return {"status": "success", "output": result.stdout}
-        except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Fallo en el script:\n{e.stderr}")
+            # 1. Configura entorno (igual que antes)
+            dag_path = Path(__file__).parent.absolute()
+            os.environ["KAGGLE_CONFIG_DIR"] = str(dag_path.parent / ".secrets")
+
+            from scripts.load_dataset_snowflake import run_el
+
+            # 3. Ejecución
+            logger.info("▶️ Iniciando carga de datos...")
+            run_el()
+            logger.info("✅ Carga completada")
+            return {"status": "success"}
+
+        except ImportError as e:
+            logger.error(f"❌ Error al importar el script: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Error inesperado: {e}")
             raise
 
-    # Flujo de trabajo
-    run_snowflake_script()
+    run_data_load()
 
-# Instanciación del DAG
 snowflake_loader_dag = load_snowflake()
