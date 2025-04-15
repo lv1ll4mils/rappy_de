@@ -21,9 +21,8 @@
 ├── dags/
 │   ├── load_process.py              # DAG principal
 │   └── utils/
-│       ├── callbacks.py             # Slack alerts
-│       ├── snowflake_conn.py        # Conexión a Snowflake
-│       ├── s3_conn.py               # Conexión a S3
+│       ├── callbacks.py             # Alertas Slack
+│       ├── connections.py           # Conexión a Snowflake y S3
 │       └── task_executor.py         # Ejecuta funciones con logging
 │
 ├── scripts/
