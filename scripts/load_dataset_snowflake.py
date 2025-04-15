@@ -1,75 +1,79 @@
+# 1. Mejoras en imports (más organizados)
 import os, zipfile
+from pathlib import Path  # <- Más moderno que os.path
 import pandas as pd
 import snowflake.connector
 from kaggle.api.kaggle_api_extended import KaggleApi
 from snowflake.connector.pandas_tools import write_pandas
 
-# Paths
-download_set = '/tmp/meetup_data'
-os.makedirs(download_set, exist_ok=True)
+# 2. Constantes claras (MAYÚSCULAS)
+DOWNLOAD_PATH = Path('/tmp/meetup_data')
+DOWNLOAD_PATH.mkdir(parents=True, exist_ok=True)
 
-# 1. Snowflake connection credencials
-snowflake_config = {
-    "user" : "lvillamils",
-    "password" : "Th=to#3uTr#P_7frlkAT",
-    "account" : "zdypxny-tob18627",
-    "warehouse" : "COMPUTE_WH"
-}
+# 3. Conexión más segura con context manager
+def get_snowflake_connection(config):
+    return snowflake.connector.connect(**config)
 
-# API connection
-os.environ['KAGGLE_CONFIG_DIR'] = '/home/luigi/back_up/rappy_de/.secrets'
+# 4. Función modular para carga de archivos
+def load_csv_to_snowflake(conn, file_path, table_name):
+    try:
+        df = pd.read_csv(file_path, encoding='utf-8')
+    except UnicodeDecodeError:
+        df = pd.read_csv(file_path, encoding='latin-1')
+    
+    success, _, nrows, _ = write_pandas(
+        conn,
+        df,
+        table_name,
+        auto_create_table=True,
+        overwrite=True
+    )
+    return nrows
 
-print("KAGGLE_CONFIG_DIR:", os.getenv("KAGGLE_CONFIG_DIR"))
-print("Contenido de la carpeta:", os.listdir(os.getenv("KAGGLE_CONFIG_DIR")) if os.path.exists(os.getenv("KAGGLE_CONFIG_DIR")) else "Carpeta no encontrada")
-
-
-# 3. Download dataset with API Kaggle
-api = KaggleApi()
-api.authenticate()
-api.dataset_download_files('megelon/meetup', path=download_set, unzip=True)
-
-conn = snowflake.connector.connect(**snowflake_config)
-cursor = conn.cursor()
-
-try:
-    # 2.1 Deleet DB if exists
-    cursor.execute("DROP DATABASE IF EXISTS MEETUP_DB")
-
-    # 2.2 Create DB and SCHEMA
-    cursor.execute("CREATE DATABASE MEETUP_DB")
-    cursor.execute("CREATE SCHEMA MEETUP_DB.RAW_DATA")
-
-    # 2.3 Connection
-    cursor.execute("USE DATABASE MEETUP_DB")
-    cursor.execute("USE SCHEMA RAW_DATA")
+def setup_kaggle():
+    """Configura Kaggle solo cuando se llama explícitamente"""
+    api = KaggleApi()
+    api.authenticate()
+    return api
 
 
-    # 4. Load CSV files in Snowflake
-    for file in os.listdir(download_set):
-        if file.endswith('csv'):
-            print(f'File--> {file}')
-            file_path = os.path.join(download_set, file)
-            table_name = os.path.splitext(file)[0].upper()
 
-            try:
-                df = pd.read_csv(file_path, encoding='utf-8')
-            except UnicodeDecodeError:
-                df = pd.read_csv(file_path, encoding='latin-1')
 
-            print(f'Load {file} - {len(df)} rows in {table_name} table')
+# 5. Flujo principal más claro
+def run_el():
+    # Configuración Kaggle
+    os.environ['KAGGLE_CONFIG_DIR'] = '/home/luigi/back_up/rappy_de/.secrets'
+    
+    api = setup_kaggle()
 
-            success, nchunks, nrows, _ = write_pandas(
-                conn,
-                df,
-                table_name,
-                auto_create_table=True,
-                overwrite=True
-            )
+    # Descarga de datos
+    api.dataset_download_files('megelon/meetup', path=str(DOWNLOAD_PATH), unzip=True)
+    
+    # Conexión Snowflake
+    snowflake_config = {
+        "user" : "lvillamils",
+        "password" : "Th=to#3uTr#P_7frlkAT",
+        "account" : "zdypxny-tob18627",
+        "warehouse" : "COMPUTE_WH"
+    }
+    
+    with get_snowflake_connection(snowflake_config) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DROP DATABASE IF EXISTS MEETUP_DB")
+        cursor.execute("CREATE DATABASE MEETUP_DB")
+        cursor.execute("CREATE SCHEMA MEETUP_DB.RAW_DATA")
+        cursor.execute("USE DATABASE MEETUP_DB")
+        cursor.execute("USE SCHEMA RAW_DATA")
 
-            print(f'{nrows} load rows in {table_name}')
+        allowed_files = {'categories.csv', 'cities.csv', 'events.csv', 'groups.csv', 'groups_topics.csv', 'topics.csv', 'venues.csv'}
+        # Procesar archivos
+        for file in DOWNLOAD_PATH.glob('*.csv'):
+            if file.name in allowed_files:
+                #print("Archivos encontrados:", [f.name for f in DOWNLOAD_PATH.glob('*')])
+                table_name = file.stem.upper()
+                print(f'Processing {file.name}')
+                row_count = load_csv_to_snowflake(conn, file, table_name)
+                print(f'Loaded {row_count} rows into {table_name}')
 
-finally:
-    # Cierre seguro de la conexión
-    cursor.close()
-    conn.close()
-    print("Conexión cerrada correctamente")
+if __name__ == "__main__":
+    run_el()
