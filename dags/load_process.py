@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @dag(
     dag_id="snowflake_loader",
-    schedule=None,
+    schedule="*/15 * * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args={
