@@ -4,6 +4,7 @@ from pathlib import Path
 import logging, os
 from airflow.decorators import dag, task
 from utils.callbacks import slack_success_callback, slack_failure_callback
+from dags.utils.task_executor import run_step
 
 # Configura logging
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
         "retries": 0,
         "retry_delay": timedelta(minutes=3),
     },
-    tags=["snowflake", "prod"],
+    tags=["snowflake", "s3"],
 )
 
 def load_snowflake():
@@ -29,27 +30,29 @@ def load_snowflake():
           on_failure_callback=slack_failure_callback
           )
     def run_data_load():
-        """Versión con importación directa y manejo robusto"""
-        try:
-            # 1. Configura entorno (igual que antes)
-            dag_path = Path(__file__).parent.absolute()
-            os.environ["KAGGLE_CONFIG_DIR"] = str(dag_path.parent / ".secrets")
+        os.environ["KAGGLE_CONFIG_DIR"] = str(Path(__file__).parent.parent / ".secrets")
+        return run_step(
+            task_name="Carga de datos a Snowflake",
+            import_path="scripts.load_dataset_snowflake",
+            function_name="run_el",
+            success_message="Carga completada"
+        )
 
-            from scripts.load_dataset_snowflake import run_el
+    @task(task_id="export_data_to_s3",
+          on_success_callback=slack_success_callback,
+          on_failure_callback=slack_failure_callback
+          )
+    def export_to_s3_task():
+        return run_step(
+            task_name="Exportación a S3",
+            import_path="scripts.export_to_s3",
+            function_name="export_queries_and_upload",
+            success_message="Exportación completada"
+        )
 
-            # 3. Ejecución
-            logger.info("▶️ Iniciando carga de datos...")
-            run_el()
-            logger.info("✅ Carga completada")
-            return {"status": "success"}
+    run_data = run_data_load()
+    export_s3 = export_to_s3_task()
 
-        except ImportError as e:
-            logger.error(f"❌ Error al importar el script: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"❌ Error inesperado: {e}")
-            raise
-
-    run_data_load()
+    run_data >> export_s3
 
 snowflake_loader_dag = load_snowflake()
