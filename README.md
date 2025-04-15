@@ -54,6 +54,15 @@
 - ✅ Éxito
 - ❌ Error
 
+**No olvide crear una Slack Webhook URL para poder enviar mensajes desde Airflow a un canal:**
+
+- 1. Ingrese a https://api.slack.com/apps
+- 2. Clic en Create App
+- 3. Activá la opción que indica "Activate Incoming Webhooks"
+- 4. Clic en "Add New Webhook to Workspace" y continue con los demas pasos.
+
+![alt text](msn_slack.png)
+
 
 # 📄 Licencia
 - MIT — libre de usar y adaptar.
