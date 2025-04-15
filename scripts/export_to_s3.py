@@ -10,6 +10,12 @@ EXPORT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 def execute_sql_file(cursor, sql_path):
+    """Execute all SQL statements in a given file.
+
+    Args:
+        cursor: Active Snowflake cursor.
+        sql_path (Path): Path to the SQL file.
+    """
     with open(sql_path, "r") as file:
         sql_script = file.read()
     for stmt in sql_script.split(";"):
@@ -18,7 +24,12 @@ def execute_sql_file(cursor, sql_path):
             cursor.execute(stmt)
 
 def export_queries_and_upload(conn_id="s3_conn", bucket_name="snowflak3-exp0rt-data-r4ppy"):
+    """Export Snowflake query results and upload to S3.
 
+    Args:
+        conn_id (str): Airflow connection ID for S3.
+        bucket_name (str): Target S3 bucket name.
+    """
     db_name = "MEETUP_DB"
     schema_name = "TRANSFORM_DATA"
 

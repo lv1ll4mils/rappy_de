@@ -1,7 +1,11 @@
 from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
 
 def slack_success_callback(context):
-    """Envía notificación de éxito a Slack"""
+    """Send Slack alert on DAG success.
+
+    Args:
+        context (dict): Airflow context dictionary.
+    """
     message = (
         f"✅ *DAG Exitoso*: `{context['dag_run'].dag_id}`\n"
         f"• Task: `{context['task_instance'].task_id}`\n"
@@ -12,7 +16,11 @@ def slack_success_callback(context):
     hook.send(text=message)
 
 def slack_failure_callback(context):
-    """Envía notificación de fallo a Slack"""
+    """Send Slack alert on DAG failure.
+
+    Args:
+        context (dict): Airflow context dictionary.
+    """
     message = (
         f"❌ *DAG Fallido*: `{context['dag_run'].dag_id}`\n"
         f"• Task: `{context['task_instance'].task_id}`\n"

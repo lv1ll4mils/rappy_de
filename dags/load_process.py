@@ -24,12 +24,13 @@ logger = logging.getLogger(__name__)
 )
 
 def load_snowflake():
-
+    """Define a DAG to load data into Snowflake and export it to S3."""
     @task(task_id="execute_data_load",
           on_success_callback=slack_success_callback,
           on_failure_callback=slack_failure_callback
           )
     def run_data_load():
+        """Run the Snowflake data load task."""
         os.environ["KAGGLE_CONFIG_DIR"] = str(Path(__file__).parent.parent / ".secrets")
         return run_step(
             task_name="Carga de datos a Snowflake",
@@ -43,6 +44,7 @@ def load_snowflake():
           on_failure_callback=slack_failure_callback
           )
     def export_to_s3_task():
+        """Run the export task to upload data from Snowflake to S3."""
         return run_step(
             task_name="Exportación a S3",
             import_path="scripts.export_to_s3",

@@ -17,6 +17,16 @@ DOWNLOAD_PATH.mkdir(parents=True, exist_ok=True)
 
 # 4. Función modular para carga de archivos
 def load_csv_to_snowflake(conn, file_path, table_name):
+    """Load a CSV file into a Snowflake table.
+
+    Args:
+        conn: Active Snowflake connection.
+        file_path (Path): Local CSV file path.
+        table_name (str): Destination table name in Snowflake.
+
+    Returns:
+        int: Number of rows loaded.
+    """
     try:
         df = pd.read_csv(file_path, encoding='utf-8')
     except UnicodeDecodeError:
@@ -32,7 +42,11 @@ def load_csv_to_snowflake(conn, file_path, table_name):
     return nrows
 
 def setup_kaggle():
-    """Configura Kaggle solo cuando se llama explícitamente"""
+    """Authenticate and return a Kaggle API client.
+
+    Returns:
+        KaggleApi: Authenticated Kaggle API instance.
+    """
     api = KaggleApi()
     api.authenticate()
     return api
@@ -40,6 +54,7 @@ def setup_kaggle():
 
 # 5. Flujo principal más claro
 def run_el():
+    """Download dataset from Kaggle and load it into Snowflake."""
     # Configuración Kaggle
     os.environ['KAGGLE_CONFIG_DIR'] = '/home/luigi/back_up/rappy_de/.secrets'
 
