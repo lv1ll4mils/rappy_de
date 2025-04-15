@@ -39,22 +39,25 @@ def export_queries_and_upload(conn_id="s3_conn", bucket_name="snowflak3-exp0rt-d
         cursor.execute(f"CREATE SCHEMA IF NOT EXISTS MEETUP_DB.{schema_name}")
         cursor.execute(f"USE SCHEMA {schema_name}")
 
-        # A. Crear tablas
+
         create_path = Path(__file__).parent.parent / "include/sql/create_tables.sql"
-        logger.info(f'PROCESO CREACION {create_path}')
         execute_sql_file(cursor, create_path)
 
-        # B. Ejecutar selects
+
         export_path = Path(__file__).parent.parent / "include/sql/export_queries.sql"
-        logger.info(f'PROCESO SELECCION {export_path}')
         with open(export_path, "r") as f:
             selects = [q.strip() for q in f.read().split(";") if q.strip()]
 
         s3 = get_s3_client(conn_id)
 
-        for i, query in enumerate(selects, 1):
+        output_files = ["ACTIVE_MEMBERS.csv", "EVENT_TRACKING.csv"]
+
+        for i, query in enumerate(selects):
+            if i >= len(output_files):
+                raise IndexError("Not enough output filenames for number of queries.")
+
+            file_name = output_files[i]
             df = pd.read_sql(query, conn)
-            file_name = "ACTIVE_MEMBERS.csv"
             local_path = EXPORT_PATH / file_name
             df.to_csv(local_path, index=False)
             logger.info(f'Exported to {local_path}')

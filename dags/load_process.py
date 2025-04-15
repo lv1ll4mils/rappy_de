@@ -6,13 +6,13 @@ from airflow.decorators import dag, task
 from utils.callbacks import slack_success_callback, slack_failure_callback
 from dags.utils.task_executor import run_step
 
-# Configura logging
+
 logger = logging.getLogger(__name__)
 
-# 2. Configuración centralizada
+
 @dag(
     dag_id="snowflake_loader",
-    schedule="*/15 * * * *",
+    schedule=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     default_args={
