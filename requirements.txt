@@ -2,3 +2,4 @@ pandas
 snowflake-connector-python[pandas]
 kaggle
 apache-airflow-providers-slack
+boto3
