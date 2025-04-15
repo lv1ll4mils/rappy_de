@@ -3,9 +3,9 @@
 ## Este proyecto implementa un pipeline de datos con:
 
 - Apache Airflow
-- Snowflake
-- Amazon S3
-- Kaggle
+- Snowflake **(Debe tener cta)**
+- Amazon S3 **(Debe tener cta)**
+- Kaggle **(Debe tener cta)**
 - Slack Webhooks
 
 
@@ -48,7 +48,11 @@
 - project-root/.secrets/kaggle.json
 
 
-### 🔔 Notificaciones
+## Iniciar Airflow a través de Astronomer CLI
+### astro dev start
+
+
+## 🔔 Notificaciones
 **Slack envía alertas en:**
 
 - ✅ Éxito
@@ -61,7 +65,14 @@
 - 3. Activá la opción que indica "Activate Incoming Webhooks"
 - 4. Clic en "Add New Webhook to Workspace" y continue con los demas pasos.
 
+![alt text](slack_config.png)
+
 ![alt text](msn_slack.png)
+
+
+## Configuración de conexiones
+
+![alt text](connectios_config.png)
 
 
 # 📄 Licencia
