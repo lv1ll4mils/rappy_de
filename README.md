@@ -64,18 +64,18 @@
 - 3. Activá la opción que indica "Activate Incoming Webhooks"
 - 4. Clic en "Add New Webhook to Workspace" y continue con los demas pasos.
 
-![alt text](slack_config.png)
+![alt text](/z_images/slack_config.png)
 
-![alt text](msn_slack.png)
+![alt text](/z_images/msn_slack.png)
 
 
 ## Configuración de conexiones
 
-![alt text](connectios_config.png)
+![alt text](/z_images/connectios_config.png)
 
 ## Descarga de archivos
 
-![alt text](dw_files.png)
+![alt text](/z_images/dw_files.png)
 
 # 📄 Licencia
 - MIT — libre de usar y adaptar.
