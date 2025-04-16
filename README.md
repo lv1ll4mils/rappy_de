@@ -73,10 +73,12 @@
 
 ![alt text](connectios_config.png)
 
+## Descarga de archivos
+
+![alt text](dw_files.png)
 
 # 📄 Licencia
 - MIT — libre de usar y adaptar.
-
 
 # 👨‍💻 Autor
 Luiyerfreht Villamil\
