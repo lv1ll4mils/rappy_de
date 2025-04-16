@@ -24,19 +24,32 @@ def load_csv_to_snowflake(conn, file_path, table_name):
     Returns:
         int: Number of rows loaded.
     """
-    try:
-        df = pd.read_csv(file_path, encoding='utf-8')
-    except UnicodeDecodeError:
-        df = pd.read_csv(file_path, encoding='latin-1')
-
-    success, _, nrows, _ = write_pandas(
-        conn,
-        df,
-        table_name,
-        auto_create_table=True,
-        overwrite=True
-    )
-    return nrows
+    chunksize = 900000
+    total_rows = 0
+    first_chunk = True
+    
+    encodings = ['utf-8', 'latin-1']
+    
+    for encoding in encodings:
+        try:
+            logger.info(f"Trying encoding: {encoding}")
+            for chunk in pd.read_csv(file_path, chunksize=chunksize, encoding=encoding):
+                success, _, nrows, _ = write_pandas(
+                    conn,
+                    chunk,
+                    table_name,
+                    auto_create_table=first_chunk,
+                    overwrite=first_chunk
+                )
+                total_rows += nrows
+                first_chunk = False
+            break
+        except UnicodeDecodeError as e:
+            logger.warning(f"Encoding '{encoding}' failed: {e}")
+            continue
+    else:
+        raise UnicodeDecodeError("Both utf-8 and latin-1 encodings failed.")
+    return total_rows
 
 def setup_kaggle():
     """Authenticate and return a Kaggle API client.
